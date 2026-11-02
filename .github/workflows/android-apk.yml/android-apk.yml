@@ -1,0 +1,41 @@
+name: Build BLAST HORROR APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'BLAST_HORROR_Godot4_Project.zip'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Godot project
+        run: |
+          unzip -o BLAST_HORROR_Godot4_Project.zip -d .
+          test -f BLAST_HORROR_Godot/project.godot
+          sed -i 's/target_sdk=35/target_sdk=33/' BLAST_HORROR_Godot/export_presets.cfg
+          mkdir -p BLAST_HORROR_Godot/build
+
+      - name: Import project resources
+        run: godot --headless --editor --path BLAST_HORROR_Godot --quit
+
+      - name: Export Android APK
+        run: godot --headless --path BLAST_HORROR_Godot --export-debug Android BLAST_HORROR_Godot/build/BLAST_HORROR.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BLAST-HORROR-Android-APK
+          path: BLAST_HORROR_Godot/build/BLAST_HORROR.apk
+          if-no-files-found: error
+          retention-days: 14
